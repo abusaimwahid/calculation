@@ -1,0 +1,3 @@
+export default function Backup() {
+  return <><div className="pageHead"><div><p className="eyebrow">Safety</p><h1>Backup & export</h1><p>Download a full portable copy of your finance records anytime.</p></div></div><section className="panel narrow"><h2>Full JSON backup</h2><p className="muted">Includes transactions, accounts, assets, debts, crypto holdings, crypto flows and settings. Keep this file somewhere safe.</p><a className="btn primary" href="/api/export?format=json">Download full backup</a><hr/><h2>Transactions CSV</h2><p className="muted">Easy to open in Excel or Google Sheets.</p><a className="btn" href="/api/export?format=csv">Download transactions CSV</a></section></>;
+}

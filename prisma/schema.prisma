@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum AccountKind {
+  CASH
+  BANK
+  MOBILE_WALLET
+  SAVINGS
+  OTHER
+}
+
+enum DebtDirection {
+  PAYABLE
+  RECEIVABLE
+}
+
+enum DebtStatus {
+  OPEN
+  PAID
+}
+
+enum CryptoFlowType {
+  BUY
+  SELL
+  DEPOSIT
+  WITHDRAW
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  date      DateTime?
+  type      TransactionType
+  amount    Decimal         @db.Decimal(18, 2)
+  category  String
+  accountId String?
+  account   Account?        @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  note      String?
+  legacy    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([date])
+  @@index([type])
+  @@index([category])
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  name      String      @unique
+  kind      AccountKind @default(OTHER)
+  balance   Decimal     @db.Decimal(18, 2)
+  active    Boolean     @default(true)
+  note      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   Transaction[]
+}
+
+model Asset {
+  id            String   @id @default(cuid())
+  name          String
+  purchaseValue Decimal  @db.Decimal(18, 2)
+  currentValue  Decimal? @db.Decimal(18, 2)
+  status        String   @default("Owned")
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Debt {
+  id              String        @id @default(cuid())
+  person           String
+  direction        DebtDirection
+  originalAmount   Decimal       @db.Decimal(18, 2)
+  remainingAmount  Decimal       @db.Decimal(18, 2)
+  status           DebtStatus    @default(OPEN)
+  dueDate          DateTime?
+  note             String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([direction, status])
+}
+
+model CryptoHolding {
+  id               String   @id @default(cuid())
+  symbol           String   @unique
+  quantity         Decimal  @db.Decimal(24, 8)
+  costUsdt         Decimal  @db.Decimal(24, 8)
+  currentPriceUsdt Decimal  @db.Decimal(24, 8)
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CryptoFlow {
+  id        String         @id @default(cuid())
+  date      DateTime
+  type      CryptoFlowType
+  amountUsdt Decimal        @db.Decimal(24, 8)
+  note      String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([date])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
