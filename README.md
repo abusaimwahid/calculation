@@ -1,68 +1,86 @@
-# LifeLedger — Personal Finance Web App
+# LifeLedger
 
-A small, private, deployable finance tracker rebuilt from `Calculation.xlsm`.
+LifeLedger is a private, single-user personal finance app rebuilt from `Calculation.xlsm`. It keeps daily entry quick while tracking accounts, assets, payable and receivable debts, USDT, crypto holdings, and net worth.
 
-## What is already included
+## Stack
 
-- Private single-user login
-- Dashboard with net worth, monthly income/expense, cash, assets, debts and crypto
-- Daily income/expense CRUD + search/filter
-- New income/expense automatically changes the selected account balance (edit/delete safely reverses the change)
-- Accounts/wallet balances
-- Assets and current values
-- Payable debts and receivables
-- USDT buy/deposit/sell/withdraw tracking
-- Crypto holdings, current price, P/L, exchange rate and available USDT
-- JSON full backup + CSV transaction export
-- Mobile responsive interface
-- Seed data migrated from the uploaded Excel workbook
+- Next.js 16 App Router, React 19, and TypeScript
+- PostgreSQL with Prisma ORM
+- Signed, expiring, HTTP-only cookie authentication
+- Vercel-ready production configuration
 
-### Excel data mapped into the app
+## Features
 
-- Accounts: DBBL, Rocket, bKash, Nagad, Somiti, Pocket, Apple Gift
-- Assets: ৳453,000 imported
-- Legacy expenses: ৳406,970 imported (dates were not present in Excel, so they are marked Legacy)
-- Earnings history: ৳762,800 imported with monthly dates
-- First debt group: ৳83,558 classified as **Payable** because the Excel dashboard subtracts it from cash
-- Second debt group: ৳35,100 classified as **Receivable** because it appears to be money given to people; you can change/delete these records if needed
-- Crypto: APE 3,586.2, cost 1,030.14 USDT, current price 0.127 USDT
-- Available USDT: 933.65
-- Exchange rate: 127 BDT/USDT
-- Crypto flows: 11,563 USDT in and 9,653.93 USDT out, matching the workbook totals
+- Income, expense, and account-to-account transfer CRUD
+- Search, account/category/type filters, and sorting
+- Transaction-safe balance updates on create, edit, and delete
+- Safe account archiving with complete history
+- Assets with category and explicit net-worth inclusion
+- Payable/receivable debts with open, partial, and paid states
+- Manual USDT exchange rates and crypto prices (no fabricated live prices)
+- Timestamped full JSON backup plus CSV exports
+- Responsive desktop and mobile interface
 
-## Fast setup (local)
+Net worth is calculated once from active account balances + included assets + receivables + available USDT and crypto holdings − payables. Transfers do not count as income or expense.
 
-1. Create a PostgreSQL database (Neon, Supabase Postgres, Railway Postgres, etc.).
-2. Copy `.env.example` to `.env` and fill in `DATABASE_URL`, login password and session secret.
-3. Install and initialize:
+## Local setup
+
+Requirements: Node.js 20+ and PostgreSQL.
 
 ```bash
-npm install
-npx prisma db push
+npm ci
+cp .env.example .env.local
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
 
-Open `http://localhost:3000` and sign in with `APP_USER` / `APP_PASSWORD`.
+Open `http://localhost:3000`. Development-only login defaults are used when auth variables are absent outside production; setting all variables locally is strongly recommended.
 
-## Deploy to a domain
+## Environment variables
 
-Recommended quick route: Vercel + any hosted PostgreSQL database.
+```dotenv
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+APP_USER="admin"
+APP_PASSWORD="a-strong-private-password"
+SESSION_SECRET="at-least-32-cryptographically-random-characters"
+NEXT_PUBLIC_APP_NAME="LifeLedger"
+```
 
-1. Push this folder to a private GitHub repository.
-2. Import the repo in Vercel.
-3. Add the same environment variables from `.env.example` in Vercel.
-4. Run `npx prisma db push` and `npm run db:seed` once against the production database.
-5. Deploy, then attach your custom domain from the hosting dashboard.
+Never commit `.env` or `.env.local`. Production refuses to authenticate when required auth configuration is missing or the session secret is too short.
 
-**Important:** run `db:seed` only on the first empty database. The seed intentionally clears existing tables before importing the Excel snapshot.
+## Database and seed
 
-## Daily use
+Validate and deploy committed migrations:
 
-- Add every normal expense/income from **Transactions**.
-- Update wallet/bank current balances from **Accounts** when needed.
-- Update debt remaining amounts when you pay/receive money.
-- Update crypto current price + available USDT from **Crypto**.
-- Download a backup regularly from **Backup**.
+```bash
+npx prisma validate
+npx prisma generate
+npx prisma migrate deploy
+```
 
-This is intentionally kept smaller than accounting software so daily updates stay fast.
+The seed imports the original workbook snapshot using stable import keys. It is idempotent and never clears tables or overwrites later balance/value edits. Do not use `prisma migrate reset` on production.
+
+Imported concepts include DBBL, Rocket, bKash, Nagad, Somiti, Pocket, Apple Gift, historical earnings and expenses, physical assets, both debt groups, APE holdings, USDT flows, available USDT, and the workbook exchange rate. Legacy expenses whose dates were absent remain explicitly marked as legacy and are excluded from monthly totals.
+
+## Verification
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+## Vercel deployment
+
+1. Create a private Vercel project linked to this repository.
+2. Add all required environment variables for Production (and Preview if used).
+3. Run `npx prisma migrate deploy` against the intended production database.
+4. Deploy with `vercel --prod` or through the linked Git integration.
+
+Use a pooled Neon PostgreSQL connection string for the application when recommended by Neon. Keep credentials exclusively in Vercel environment variables.
+
+## Backups
+
+The **Backup** page provides a full timestamped JSON snapshot and separate CSV exports for transactions, accounts, assets, debts, and crypto. Exports require authentication and use private, no-store response headers. Store downloaded backups somewhere private.

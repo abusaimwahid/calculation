@@ -11,7 +11,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
     <h1>Welcome back</h1><p>Sign in to update your daily finance records.</p>
     {error && <div className="alert error">Wrong username or password.</div>}
     <form action={loginAction} className="stack">
-      <label>Username<input name="user" defaultValue="admin" autoComplete="username" required /></label>
+      <label>Username<input name="user" defaultValue={process.env.APP_USER || "admin"} autoComplete="username" required /></label>
       <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
       <SubmitButton>Sign in</SubmitButton>
     </form>

@@ -9,6 +9,7 @@ const links = [
   ["Debts", "/debts", "⇄"],
   ["Crypto", "/crypto", "₿"],
   ["Backup", "/backup", "↓"],
+  ["Settings", "/settings", "⚙"],
 ];
 
 export function Sidebar() {

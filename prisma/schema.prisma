@@ -10,6 +10,7 @@ datasource db {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
 }
 
 enum AccountKind {
@@ -27,6 +28,7 @@ enum DebtDirection {
 
 enum DebtStatus {
   OPEN
+  PARTIAL
   PAID
 }
 
@@ -38,57 +40,67 @@ enum CryptoFlowType {
 }
 
 model Transaction {
-  id        String          @id @default(cuid())
-  date      DateTime?
-  type      TransactionType
-  amount    Decimal         @db.Decimal(18, 2)
-  category  String
-  accountId String?
-  account   Account?        @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  note      String?
-  legacy    Boolean         @default(false)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id                   String          @id @default(cuid())
+  date                 DateTime?
+  type                 TransactionType
+  amount               Decimal         @db.Decimal(18, 2)
+  category             String
+  accountId            String?
+  account              Account?        @relation("SourceAccount", fields: [accountId], references: [id], onDelete: Restrict)
+  destinationAccountId String?
+  destinationAccount   Account?        @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: Restrict)
+  note                 String?
+  legacy               Boolean         @default(false)
+  importKey            String?         @unique
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   @@index([date])
   @@index([type])
   @@index([category])
+  @@index([accountId])
+  @@index([destinationAccountId])
 }
 
 model Account {
-  id        String      @id @default(cuid())
-  name      String      @unique
-  kind      AccountKind @default(OTHER)
-  balance   Decimal     @db.Decimal(18, 2)
-  active    Boolean     @default(true)
-  note      String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  entries   Transaction[]
+  id                String        @id @default(cuid())
+  name              String        @unique
+  kind              AccountKind   @default(OTHER)
+  balance           Decimal       @db.Decimal(18, 2)
+  active            Boolean       @default(true)
+  note              String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  entries           Transaction[] @relation("SourceAccount")
+  incomingTransfers Transaction[] @relation("DestinationAccount")
 }
 
 model Asset {
-  id            String   @id @default(cuid())
-  name          String
-  purchaseValue Decimal  @db.Decimal(18, 2)
-  currentValue  Decimal? @db.Decimal(18, 2)
-  status        String   @default("Owned")
-  note          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  purchaseValue     Decimal  @db.Decimal(18, 2)
+  currentValue      Decimal? @db.Decimal(18, 2)
+  category          String   @default("Other")
+  includeInNetWorth Boolean  @default(true)
+  status            String   @default("Owned")
+  note              String?
+  importKey         String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Debt {
   id              String        @id @default(cuid())
-  person           String
-  direction        DebtDirection
-  originalAmount   Decimal       @db.Decimal(18, 2)
-  remainingAmount  Decimal       @db.Decimal(18, 2)
-  status           DebtStatus    @default(OPEN)
-  dueDate          DateTime?
-  note             String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  person          String
+  direction       DebtDirection
+  originalAmount  Decimal       @db.Decimal(18, 2)
+  remainingAmount Decimal       @db.Decimal(18, 2)
+  status          DebtStatus    @default(OPEN)
+  dueDate         DateTime?
+  note            String?
+  importKey       String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([direction, status])
 }
@@ -105,13 +117,14 @@ model CryptoHolding {
 }
 
 model CryptoFlow {
-  id        String         @id @default(cuid())
-  date      DateTime
-  type      CryptoFlowType
+  id         String         @id @default(cuid())
+  date       DateTime
+  type       CryptoFlowType
   amountUsdt Decimal        @db.Decimal(24, 8)
-  note      String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  note       String?
+  importKey  String?        @unique
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
   @@index([date])
 }

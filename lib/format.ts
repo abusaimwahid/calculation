@@ -23,3 +23,7 @@ export function bdToday() {
   const now = new Date(Date.now() + 6 * 60 * 60 * 1000);
   return now.toISOString().slice(0, 10);
 }
+
+export function bdNow() {
+  return new Date(Date.now() + 6 * 60 * 60 * 1000);
+}
